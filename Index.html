@@ -74,6 +74,10 @@
       font-weight: bold;
     }
 
+    button:active {
+      transform: scale(.98);
+    }
+
     .hidden {
       display: none !important;
     }
@@ -145,6 +149,49 @@
       margin-top: 20px;
     }
 
+    .section-title {
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+
+    .product {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+
+    .product strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .product small {
+      color: #666;
+    }
+
+    .commission-value {
+      color: #166534;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .connection {
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .error {
+      color: #b91c1c;
+      text-align: center;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
     @media (max-width: 600px) {
       .dashboard {
         grid-template-columns: 1fr 1fr;
@@ -160,8 +207,12 @@
   <p>Control de sucursales</p>
 </header>
 
+<div id="connectionStatus" class="connection">
+  Conectando con Firebase...
+</div>
 
-<!-- LOGIN -->
+
+<!-- ================= LOGIN ================= -->
 
 <div id="loginScreen" class="container">
 
@@ -178,28 +229,28 @@
       id="username"
       type="text"
       placeholder="Usuario / Sucursal"
+      autocomplete="username"
     >
 
     <input
       id="password"
       type="password"
       placeholder="Contraseña"
+      autocomplete="current-password"
     >
 
     <button onclick="login()">
       ENTRAR
     </button>
 
-    <p id="loginError"
-       style="color:#b91c1c;text-align:center;margin-top:12px;">
-    </p>
+    <div id="loginError" class="error"></div>
 
   </div>
 
 </div>
 
 
-<!-- MATRIX -->
+<!-- ================= MATRIX ================= -->
 
 <div id="matrixScreen" class="container hidden">
 
@@ -226,7 +277,9 @@
 
     <div class="card">
       <h3>Apartados activos</h3>
-      <div class="number" id="activeReservations">0</div>
+      <div class="number" id="activeReservations">
+        0
+      </div>
     </div>
 
   </div>
@@ -234,31 +287,31 @@
 
   <div class="menu">
 
-    <button onclick="showSection('branches')">
+    <button onclick="showMatrixSection('branches')">
       🏢 Sucursales
     </button>
 
-    <button onclick="showSection('products')">
+    <button onclick="showMatrixSection('products')">
       📦 Productos
     </button>
 
-    <button onclick="showSection('inventory')">
+    <button onclick="showMatrixSection('inventory')">
       📋 Inventario
     </button>
 
-    <button onclick="showSection('reservations')">
+    <button onclick="showMatrixSection('reservations')">
       📝 Apartados
     </button>
 
-    <button onclick="showSection('sales')">
+    <button onclick="showMatrixSection('sales')">
       🛒 Ventas
     </button>
 
-    <button onclick="showSection('reports')">
+    <button onclick="showMatrixSection('reports')">
       📊 Reportes
     </button>
 
-    <button onclick="showSection('settings')">
+    <button onclick="showMatrixSection('settings')">
       ⚙️ Configuración
     </button>
 
@@ -273,14 +326,20 @@
 
     <div class="card">
 
-      <h3>Estado del sistema</h3>
+      <h3>Conexión correcta</h3>
 
       <p style="margin-top:10px;">
-        Sistema conectado a Firebase.
+        Firebase está conectado.
       </p>
 
       <p style="margin-top:10px;">
-        Control de inventario y comisiones.
+        Los datos del sistema se almacenarán
+        en Firestore.
+      </p>
+
+      <p style="margin-top:10px;">
+        El sistema maneja inventario y
+        comisiones. No se utilizan precios públicos.
       </p>
 
     </div>
@@ -290,7 +349,7 @@
 </div>
 
 
-<!-- SUCURSAL -->
+<!-- ================= SUCURSAL ================= -->
 
 <div id="branchScreen" class="container hidden">
 
@@ -300,8 +359,7 @@
 
     <h3>Estado</h3>
 
-    <span id="branchStatus"
-          class="status closed">
+    <span id="branchStatus" class="status closed">
       🔴 Cerrada
     </span>
 
@@ -401,17 +459,19 @@
 </div>
 
 
-<!-- FIREBASE -->
+<!-- ================= FIREBASE ================= -->
 
 <script type="module">
 
-  import { initializeApp }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    initializeApp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
   import {
-    getFirestore
-  }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    getFirestore,
+    collection,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
   const firebaseConfig = {
@@ -448,37 +508,129 @@
   window.db = db;
 
 
-  console.log(
-    "Firebase conectado correctamente"
-  );
+  async function cargarDatosFirebase() {
+
+    try {
+
+      const sucursalesSnapshot =
+        await getDocs(
+          collection(db, "sucursales")
+        );
+
+
+      const productosSnapshot =
+        await getDocs(
+          collection(db, "productos")
+        );
+
+
+      window.sucursalesFirebase =
+        sucursalesSnapshot.docs.map(
+          doc => ({
+            id: doc.id,
+            ...doc.data()
+          })
+        );
+
+
+      window.productosFirebase =
+        productosSnapshot.docs.map(
+          doc => ({
+            id: doc.id,
+            ...doc.data()
+          })
+        );
+
+
+      document.getElementById(
+        "connectionStatus"
+      ).textContent =
+        "Firebase conectado correctamente";
+
+
+      console.log(
+        "Sucursales:",
+        window.sucursalesFirebase
+      );
+
+
+      console.log(
+        "Productos:",
+        window.productosFirebase
+      );
+
+
+      mostrarDatosFirebase();
+
+
+    } catch (error) {
+
+      console.error(
+        "Error leyendo Firebase:",
+        error
+      );
+
+
+      document.getElementById(
+        "connectionStatus"
+      ).textContent =
+        "Error al conectar con Firebase";
+
+
+      document.getElementById(
+        "connectionStatus"
+      ).style.background =
+        "#fee2e2";
+
+
+      document.getElementById(
+        "connectionStatus"
+      ).style.color =
+        "#991b1b";
+
+    }
+
+  }
+
+
+  function mostrarDatosFirebase() {
+
+    const productos =
+      window.productosFirebase || [];
+
+
+    const sucursales =
+      window.sucursalesFirebase || [];
+
+
+    const activas =
+      sucursales.filter(
+        s => s.activa === true
+      );
+
+
+    console.log(
+      "Sucursales activas:",
+      activas.length
+    );
+
+
+    console.log(
+      "Productos configurados:",
+      productos.length
+    );
+
+  }
+
+
+  cargarDatosFirebase();
 
 </script>
 
 
+<!-- ================= FUNCIONES DE INTERFAZ ================= -->
+
 <script>
-
-  /*
-    DATOS TEMPORALES
-
-    Estos datos serán reemplazados
-    por Firestore.
-  */
-
-  const demoMatrix = {
-    username: "matrix",
-    password: "1234"
-  };
-
-
-  const demoBranches = [
-
-    {
-      let branches = [];
-let products = [];
-    }
-
-  ];
-
 
   function login() {
 
@@ -487,157 +639,32 @@ let products = [];
         "loginType"
       ).value;
 
+
     const username =
       document.getElementById(
         "username"
       ).value.trim();
+
 
     const password =
       document.getElementById(
         "password"
       ).value;
 
+
     const error =
       document.getElementById(
         "loginError"
       );
 
-    error.textContent = "";
-
-
-    if (
-      type === "matrix" &&
-      username === demoMatrix.username &&
-      password === demoMatrix.password
-    ) {
-
-      document
-        .getElementById("loginScreen")
-        .classList.add("hidden");
-
-      document
-        .getElementById("matrixScreen")
-        .classList.remove("hidden");
-
-      return;
-
-    }
-
-
-    if (type === "branch") {
-
-      const branch =
-        demoBranches.find(
-
-          b =>
-            b.username === username &&
-            b.password === password
-
-        );
-
-
-      if (branch) {
-
-        document
-          .getElementById("loginScreen")
-          .classList.add("hidden");
-
-        document
-          .getElementById("branchScreen")
-          .classList.remove("hidden");
-
-        loadBranch(branch);
-
-        return;
-
-      }
-
-    }
-
 
     error.textContent =
-      "Usuario o contraseña incorrectos.";
+      "El acceso real todavía está en construcción.";
 
   }
 
 
-  function loadBranch(branch) {
-
-    document.getElementById(
-      "branchTitle"
-    ).textContent = branch.name;
-
-
-    document.getElementById(
-      "branchInventory"
-    ).textContent = branch.inventory;
-
-
-    document.getElementById(
-      "branchSold"
-    ).textContent = branch.sold;
-
-
-    document.getElementById(
-      "branchCommission"
-    ).textContent =
-      "$" +
-      branch.commission.toFixed(2);
-
-
-    document.getElementById(
-      "branchReservations"
-    ).textContent =
-      branch.reservations;
-
-
-    const status =
-      document.getElementById(
-        "branchStatus"
-      );
-
-
-    status.className =
-      "status";
-
-
-    if (!branch.open) {
-
-      status.classList.add("closed");
-
-      status.textContent =
-        "🔴 Cerrada";
-
-    }
-
-    else if (branch.inventory === 0) {
-
-      status.classList.add("no-stock");
-
-      status.textContent =
-        "🟡 Abierta sin inventario";
-
-    }
-
-    else {
-
-      status.classList.add("open");
-
-      status.textContent =
-        "🟢 Abierta";
-
-    }
-
-  }
-
-
-  function showSection(section) {
-
-    const content =
-      document.getElementById(
-        "matrixContent"
-      );
-
+  function showMatrixSection(section) {
 
     const titles = {
 
@@ -658,17 +685,18 @@ let products = [];
     };
 
 
-    content.innerHTML = `
+    document.getElementById(
+      "matrixContent"
+    ).innerHTML = `
 
       <div class="card">
 
-        <h2>
+        <h2 class="section-title">
           ${titles[section]}
         </h2>
 
-        <p style="margin-top:15px;">
-          Esta sección será construida
-          sobre Firestore.
+        <p>
+          Módulo en construcción.
         </p>
 
       </div>
@@ -679,12 +707,6 @@ let products = [];
 
 
   function showBranchSection(section) {
-
-    const content =
-      document.getElementById(
-        "branchContent"
-      );
-
 
     const titles = {
 
@@ -699,17 +721,18 @@ let products = [];
     };
 
 
-    content.innerHTML = `
+    document.getElementById(
+      "branchContent"
+    ).innerHTML = `
 
       <div class="card">
 
-        <h2>
+        <h2 class="section-title">
           ${titles[section]}
         </h2>
 
-        <p style="margin-top:15px;">
-          Esta sección será construida
-          sobre Firestore.
+        <p>
+          Módulo en construcción.
         </p>
 
       </div>
@@ -725,21 +748,30 @@ let products = [];
       .getElementById("matrixScreen")
       .classList.add("hidden");
 
+
     document
       .getElementById("branchScreen")
       .classList.add("hidden");
+
 
     document
       .getElementById("loginScreen")
       .classList.remove("hidden");
 
+
     document.getElementById(
       "username"
     ).value = "";
 
+
     document.getElementById(
       "password"
     ).value = "";
+
+
+    document.getElementById(
+      "loginError"
+    ).textContent = "";
 
   }
 
