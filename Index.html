@@ -1,1 +1,725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Inventario</title>
 
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 22px;
+    }
+
+    header p {
+      margin-top: 5px;
+      font-size: 13px;
+      opacity: .8;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 18px;
+    }
+
+    .login {
+      max-width: 400px;
+      margin: 50px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.08);
+    }
+
+    .login h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 10px;
+      border-radius: 9px;
+      border: 1px solid #d1d5db;
+      font-size: 15px;
+    }
+
+    button {
+      background: #111827;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:active {
+      transform: scale(.98);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 3px 12px rgba(0,0,0,.06);
+    }
+
+    .card h3 {
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .number {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .menu {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .menu button {
+      min-height: 65px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .closed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .open {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .no-stock {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .product {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .product-info strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .qty {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .commission {
+      color: #166534;
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      .dashboard {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>SISTEMA DE INVENTARIO</h1>
+  <p>Control de sucursales</p>
+</header>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="container">
+
+  <div class="login">
+
+    <h2>Iniciar sesión</h2>
+
+    <select id="loginType">
+      <option value="matrix">Matrix</option>
+      <option value="branch">Sucursal</option>
+    </select>
+
+    <input
+      id="username"
+      type="text"
+      placeholder="Usuario / Sucursal"
+    >
+
+    <input
+      id="password"
+      type="password"
+      placeholder="Contraseña"
+    >
+
+    <button onclick="login()">
+      ENTRAR
+    </button>
+
+    <p id="loginError"
+       style="color:#b91c1c;text-align:center;margin-top:12px;">
+    </p>
+
+  </div>
+
+</div>
+
+
+<!-- MATRIX -->
+<div id="matrixScreen" class="container hidden">
+
+  <h2>Panel Matrix</h2>
+
+  <div class="dashboard">
+
+    <div class="card">
+      <h3>Sucursales abiertas</h3>
+      <div class="number" id="openBranches">0</div>
+    </div>
+
+    <div class="card">
+      <h3>Piezas vendidas hoy</h3>
+      <div class="number" id="soldPieces">0</div>
+    </div>
+
+    <div class="card">
+      <h3>Comisiones generadas</h3>
+      <div class="number commission" id="totalCommission">
+        $0.00
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Apartados activos</h3>
+      <div class="number" id="activeReservations">0</div>
+    </div>
+
+  </div>
+
+
+  <div class="menu">
+
+    <button onclick="showSection('branches')">
+      🏢 Sucursales
+    </button>
+
+    <button onclick="showSection('products')">
+      📦 Productos
+    </button>
+
+    <button onclick="showSection('inventory')">
+      📋 Inventario
+    </button>
+
+    <button onclick="showSection('reservations')">
+      📝 Apartados
+    </button>
+
+    <button onclick="showSection('sales')">
+      🛒 Ventas
+    </button>
+
+    <button onclick="showSection('reports')">
+      📊 Reportes
+    </button>
+
+    <button onclick="showSection('settings')">
+      ⚙️ Configuración
+    </button>
+
+    <button onclick="logout()">
+      🚪 Cerrar sesión
+    </button>
+
+  </div>
+
+
+  <div id="matrixContent" class="section">
+
+    <div class="card">
+
+      <h3>Estado del sistema</h3>
+
+      <p style="margin-top:10px;">
+        Sistema preparado para administrar inventario,
+        ventas, apartados y comisiones.
+      </p>
+
+      <p style="margin-top:10px;">
+        <strong>Los precios públicos no forman parte del sistema.</strong>
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- SUCURSAL -->
+<div id="branchScreen" class="container hidden">
+
+  <h2 id="branchTitle">Sucursal</h2>
+
+  <div class="card">
+
+    <h3>Estado</h3>
+
+    <span id="branchStatus"
+          class="status closed">
+      🔴 Cerrada
+    </span>
+
+  </div>
+
+
+  <div class="dashboard">
+
+    <div class="card">
+
+      <h3>Inventario disponible</h3>
+
+      <div class="number" id="branchInventory">
+        0
+      </div>
+
+      <p style="margin-top:5px;">
+        piezas
+      </p>
+
+    </div>
+
+    <div class="card">
+
+      <h3>Piezas vendidas hoy</h3>
+
+      <div class="number" id="branchSold">
+        0
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h3>Comisión generada hoy</h3>
+
+      <div class="number commission" id="branchCommission">
+        $0.00
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h3>Apartados activos</h3>
+
+      <div class="number" id="branchReservations">
+        0
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="menu">
+
+    <button onclick="showBranchSection('inventory')">
+      📦 Mi inventario
+    </button>
+
+    <button onclick="showBranchSection('sale')">
+      🛒 Nueva venta
+    </button>
+
+    <button onclick="showBranchSection('sales')">
+      📋 Ventas
+    </button>
+
+    <button onclick="showBranchSection('reservations')">
+      📝 Apartados
+    </button>
+
+    <button onclick="logout()">
+      🚪 Cerrar sesión
+    </button>
+
+  </div>
+
+
+  <div id="branchContent" class="section">
+
+    <div class="card">
+
+      <h3>Sin inventario</h3>
+
+      <p style="margin-top:10px;">
+        Esperando asignación de inventario por Matrix.
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  /*
+    DATOS TEMPORALES
+
+    Estos datos solamente sirven para probar
+    la interfaz.
+
+    Más adelante serán reemplazados por Firebase.
+  */
+
+  const demoMatrix = {
+    username: "matrix",
+    password: "1234"
+  };
+
+  const demoBranches = [
+    {
+      name: "Sucursal 1",
+      username: "sucursal1",
+      password: "1234",
+      open: false,
+      inventory: 0,
+      sold: 0,
+      commission: 0,
+      reservations: 0
+    }
+  ];
+
+
+  function login() {
+
+    const type =
+      document.getElementById("loginType").value;
+
+    const username =
+      document.getElementById("username").value.trim();
+
+    const password =
+      document.getElementById("password").value;
+
+    const error =
+      document.getElementById("loginError");
+
+    error.textContent = "";
+
+
+    if (type === "matrix") {
+
+      if (
+        username === demoMatrix.username &&
+        password === demoMatrix.password
+      ) {
+
+        document
+          .getElementById("loginScreen")
+          .classList.add("hidden");
+
+        document
+          .getElementById("matrixScreen")
+          .classList.remove("hidden");
+
+        updateMatrix();
+
+        return;
+      }
+
+    }
+
+
+    if (type === "branch") {
+
+      const branch =
+        demoBranches.find(
+          b =>
+            b.username === username &&
+            b.password === password
+        );
+
+      if (branch) {
+
+        document
+          .getElementById("loginScreen")
+          .classList.add("hidden");
+
+        document
+          .getElementById("branchScreen")
+          .classList.remove("hidden");
+
+        loadBranch(branch);
+
+        return;
+      }
+
+    }
+
+
+    error.textContent =
+      "Usuario o contraseña incorrectos.";
+
+  }
+
+
+  function loadBranch(branch) {
+
+    document.getElementById("branchTitle")
+      .textContent = branch.name;
+
+    document.getElementById("branchInventory")
+      .textContent = branch.inventory;
+
+    document.getElementById("branchSold")
+      .textContent = branch.sold;
+
+    document.getElementById("branchCommission")
+      .textContent =
+      "$" + branch.commission.toFixed(2);
+
+    document.getElementById("branchReservations")
+      .textContent = branch.reservations;
+
+
+    const status =
+      document.getElementById("branchStatus");
+
+    status.className = "status";
+
+
+    if (!branch.open) {
+
+      status.classList.add("closed");
+
+      status.textContent = "🔴 Cerrada";
+
+    }
+    else if (branch.inventory === 0) {
+
+      status.classList.add("no-stock");
+
+      status.textContent =
+        "🟡 Abierta sin inventario";
+
+    }
+    else {
+
+      status.classList.add("open");
+
+      status.textContent = "🟢 Abierta";
+
+    }
+
+  }
+
+
+  function updateMatrix() {
+
+    const open =
+      demoBranches.filter(b => b.open).length;
+
+    document.getElementById("openBranches")
+      .textContent = open;
+
+
+    const sold =
+      demoBranches.reduce(
+        (total, b) => total + b.sold,
+        0
+      );
+
+    document.getElementById("soldPieces")
+      .textContent = sold;
+
+
+    const commission =
+      demoBranches.reduce(
+        (total, b) => total + b.commission,
+        0
+      );
+
+    document.getElementById("totalCommission")
+      .textContent =
+      "$" + commission.toFixed(2);
+
+
+    const reservations =
+      demoBranches.reduce(
+        (total, b) => total + b.reservations,
+        0
+      );
+
+    document.getElementById("activeReservations")
+      .textContent = reservations;
+
+  }
+
+
+  function showSection(section) {
+
+    const content =
+      document.getElementById("matrixContent");
+
+    const titles = {
+
+      branches: "Sucursales",
+
+      products: "Productos",
+
+      inventory: "Inventario",
+
+      reservations: "Apartados",
+
+      sales: "Ventas",
+
+      reports: "Reportes",
+
+      settings: "Configuración"
+
+    };
+
+
+    content.innerHTML = `
+
+      <div class="card">
+
+        <h2>${titles[section]}</h2>
+
+        <p style="margin-top:15px;">
+          Esta sección será construida
+          en la siguiente etapa.
+        </p>
+
+      </div>
+
+    `;
+
+  }
+
+
+  function showBranchSection(section) {
+
+    const content =
+      document.getElementById("branchContent");
+
+
+    const titles = {
+
+      inventory: "Mi inventario",
+
+      sale: "Nueva venta",
+
+      sales: "Ventas",
+
+      reservations: "Apartados"
+
+    };
+
+
+    content.innerHTML = `
+
+      <div class="card">
+
+        <h2>${titles[section]}</h2>
+
+        <p style="margin-top:15px;">
+          Esta sección será construida
+          en la siguiente etapa.
+        </p>
+
+      </div>
+
+    `;
+
+  }
+
+
+  function logout() {
+
+    document
+      .getElementById("matrixScreen")
+      .classList.add("hidden");
+
+    document
+      .getElementById("branchScreen")
+      .classList.add("hidden");
+
+    document
+      .getElementById("loginScreen")
+      .classList.remove("hidden");
+
+    document.getElementById("username").value = "";
+
+    document.getElementById("password").value = "";
+
+  }
+
+</script>
+
+</body>
+  </html>
